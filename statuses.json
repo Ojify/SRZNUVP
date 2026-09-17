@@ -1,0 +1,22 @@
+{
+  "active": {
+    "code": "active",
+    "name": "Активна",
+    "description": "Заявка подана и рассматривается"
+  },
+  "cancelled": {
+    "code": "cancelled",
+    "name": "Отменена",
+    "description": "Заявка отменена пользователем"
+  },
+  "approved": {
+    "code": "approved",
+    "name": "Одобрена",
+    "description": "Заявка принята организатором"
+  },
+  "rejected": {
+    "code": "rejected",
+    "name": "Отклонена",
+    "description": "Заявка отклонена организатором"
+  }
+}
