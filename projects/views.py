@@ -1,92 +1,39 @@
-from django.http import HttpResponse
+from django.shortcuts import render
 
-from homepage.views import page
-from domain_projects import (
-    find_project,
-    free_places,
-    load_projects,
-)
+from domain_projects import find_project, load_projects
 from domain_users import load_users
 from domain_applications import load_applications
 
 
 def projects(request):
+    """Список проектов."""
     projects_dict = load_projects()
-    items = ''
-    for p in projects_dict.values():
-        items += f"""
-        <li class="list-group-item">
-            <a href="/projects/{p.id}/">
-                [{p.id}] {p.name}
-                — {p.current_participants}/{p.max_participants},
-                свободно: {free_places(p)}
-            </a>
-        </li>
-        """
-    content = f"""
-    <h1>Проекты</h1>
-    <p>Всего проектов: {len(projects_dict)}</p>
-    <ul class="list-group">{items}</ul>
-    """
-    return HttpResponse(page('Проекты', content))
+    context = {
+        "projects": list(projects_dict.values()),
+    }
+    return render(request, "projects/project_list.html", context)
 
 
 def project_detail(request, project_id):
+    """Карточка проекта и заявки на него."""
     projects_dict = load_projects()
     project = find_project(projects_dict, project_id)
 
-    if project is None:
-        content = """
-        <h1 class="text-danger">Проект не найден</h1>
-        <a href="/projects/"
-           class="btn btn-outline-secondary">← к списку проектов</a>
-        """
-        return HttpResponse(
-            page('Проект не найден', content),
-            status=404,
-        )
+    project_applications = []
+    if project is not None:
+        users_dict = load_users()
+        applications = load_applications(projects_dict, users_dict)
+        project_applications = [
+            a for a in applications if a.project.id == project_id
+        ]
 
-    users_dict = load_users()
-    applications = load_applications(projects_dict, users_dict)
-    project_applications = [
-        a for a in applications if a.project.id == project_id
-    ]
-
-    available = project.is_available()
-    status = 'доступен' if available else 'мест нет'
-    badge = 'bg-success' if available else 'bg-danger'
-
-    rows = ''
-    for a in project_applications:
-        rows += f"""
-        <li class="list-group-item">
-            <a href="/applications/{a.id}/">Заявка №{a.id}</a>
-            — {a.user.name}, статус: {a.status} ({a.created_at})
-        </li>
-        """
-
-    content = f"""
-    <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">{project.name}</h5>
-            <p class="card-text">
-                <strong>Описание:</strong> {project.description}
-            </p>
-            <p class="card-text">
-                <strong>Дедлайн:</strong> {project.deadline}
-            </p>
-            <p class="card-text">
-                <strong>Участников:</strong>
-                {project.current_participants} из {project.max_participants}
-            </p>
-            <p class="card-text">
-                Статус: <span class="badge {badge}">{status}</span>
-            </p>
-        </div>
-    </div>
-    <h2 class="mt-4">Заявки на проект</h2>
-    <ul class="list-group">{rows}</ul>
-    <a href="/projects/"
-       class="btn btn-outline-secondary mt-3">← к списку проектов</a>
-    """
-    return HttpResponse(page(project.name, content))
+    context = {
+        "project": project,
+        "project_applications": project_applications,
+    }
+    return render(
+        request,
+        "projects/project_detail.html",
+        context,
+        status=404 if project is None else 200,
+    )

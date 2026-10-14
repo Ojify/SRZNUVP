@@ -1,0 +1,24 @@
+<article class="card mb-3 user-card">
+    <div class="card-body">
+        <h2 class="card-title h5">
+            <a href="{% url 'users:detail' user.id %}">
+                [{{ user.id }}] {{ user.name|default:"Без имени" }}
+            </a>
+        </h2>
+        <p class="card-text mb-1">
+            <strong>Email:</strong> {{ user.email }}
+        </p>
+        <p class="card-text">
+            <strong>Навыки:</strong>
+            {% if user.skills %}
+                {{ user.skills|join:", " }}
+            {% else %}
+                —
+            {% endif %}
+        </p>
+        <a href="{% url 'users:detail' user.id %}"
+           class="btn btn-primary btn-sm">
+            Подробнее
+        </a>
+    </div>
+</article>

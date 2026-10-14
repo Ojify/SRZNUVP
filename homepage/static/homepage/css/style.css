@@ -1,0 +1,83 @@
+body {
+    background-color: #f7f8fa;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+main.container {
+    min-height: calc(100vh - 180px);
+}
+
+footer {
+    color: #6c757d;
+    font-size: 0.9rem;
+    text-align: center;
+    border-top: 1px solid #e3e6ea;
+    padding-top: 1rem;
+}
+
+.nav.bg-light {
+    border-bottom: 1px solid #e3e6ea;
+}
+
+.nav-link {
+    color: #333;
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    color: #0d6efd;
+}
+
+.roomly-logo,
+.site-logo {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+.project-card,
+.user-card {
+    transition: box-shadow 0.15s ease-in-out;
+    border: 1px solid #e3e6ea;
+}
+
+.project-card:hover,
+.user-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.project-card .card-title a,
+.user-card .card-title a {
+    text-decoration: none;
+    color: #212529;
+}
+
+.project-card .card-title a:hover,
+.user-card .card-title a:hover {
+    color: #0d6efd;
+    text-decoration: underline;
+}
+
+.application-status {
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+}
+
+.application-status-active {
+    background-color: #198754 !important;
+}
+
+.application-status-cancelled {
+    background-color: #6c757d !important;
+}
+
+.application-status-approved {
+    background-color: #0dcaf0 !important;
+    color: #000 !important;
+}
+
+.application-status-rejected {
+    background-color: #dc3545 !important;
+}

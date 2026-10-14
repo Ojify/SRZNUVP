@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if application %}Заявка №{{ application.id }} — Сервис заявок{% else %}Заявка не найдена — Сервис заявок{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if application %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h1 class="card-title h3">Заявка №{{ application.id }}</h1>
+            <p class="card-text">
+                <strong>Проект:</strong>
+                <a href="{% url 'projects:detail' application.project.id %}">
+                    {{ application.project.name }}
+                </a>
+            </p>
+            <p class="card-text">
+                <strong>Пользователь:</strong>
+                <a href="{% url 'users:detail' application.user.id %}">
+                    {{ application.user.name }}
+                </a>
+            </p>
+            <p class="card-text">
+                <strong>Создана:</strong> {{ application.created_at }}
+            </p>
+            <p class="card-text">
+                <strong>Статус:</strong>
+                {% include "applications/includes/application_status.html" %}
+                {% if application.status_obj %}
+                    — {{ application.status_obj.description }}
+                {% endif %}
+            </p>
+        </div>
+    </div>
+{% else %}
+    <h1 class="text-danger">Заявка не найдена</h1>
+    <p>Заявка с указанным идентификатором отсутствует.</p>
+{% endif %}
+
+<a href="{% url 'applications:list' %}"
+   class="btn btn-outline-secondary mt-3">
+    ← к списку заявок
+</a>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}
+Главная — Сервис заявок
+{% endblock %}
+
+{% block content %}
+<h1 class="display-4">Сервис заявок на проекты</h1>
+<p class="lead">
+    Удобный интерфейс для поиска проектов и регистрации заявок
+    на участие в них.
+</p>
+<p>Основные разделы:</p>
+<a href="{% url 'projects:list' %}" class="btn btn-primary me-2">
+    Проекты
+</a>
+<a href="{% url 'users:list' %}" class="btn btn-primary me-2">
+    Пользователи
+</a>
+<a href="{% url 'applications:list' %}" class="btn btn-secondary me-2">
+    Заявки
+</a>
+<a href="{% url 'applications:statistics' %}" class="btn btn-info">
+    Статистика
+</a>
+{% endblock %}

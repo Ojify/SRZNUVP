@@ -1,0 +1,24 @@
+<article class="card mb-3 project-card">
+    <div class="card-body">
+        <h2 class="card-title h5">
+            <a href="{% url 'projects:detail' project.id %}">
+                [{{ project.id }}] {{ project.name|default:"Без названия" }}
+            </a>
+        </h2>
+        <p class="card-text mb-1">
+            {{ project.description|truncatechars:120 }}
+        </p>
+        <p class="card-text mb-1">
+            <strong>Дедлайн:</strong> {{ project.deadline }}
+        </p>
+        <p class="card-text">
+            <strong>Участников:</strong>
+            {{ project.current_participants }} из {{ project.max_participants }}
+            (свободно: {{ project.free_places }})
+        </p>
+        <a href="{% url 'projects:detail' project.id %}"
+           class="btn btn-primary btn-sm">
+            Подробнее
+        </a>
+    </div>
+</article>

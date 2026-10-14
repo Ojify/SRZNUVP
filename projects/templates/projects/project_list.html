@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}
+Проекты — Сервис заявок
+{% endblock %}
+
+{% block content %}
+<h1>Проекты</h1>
+<p>Всего проектов: {{ projects|length }}</p>
+
+{% for project in projects %}
+    {% include "projects/includes/project_card.html" %}
+{% empty %}
+    <p>Проекты не найдены.</p>
+{% endfor %}
+{% endblock %}

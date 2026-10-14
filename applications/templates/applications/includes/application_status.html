@@ -1,0 +1,21 @@
+{% if application.is_active %}
+    <span class="badge bg-success application-status application-status-active">
+        {{ application.status_obj.name|default:"Активна" }}
+    </span>
+{% elif application.status == "cancelled" %}
+    <span class="badge bg-secondary application-status application-status-cancelled">
+        {{ application.status_obj.name|default:"Отменена" }}
+    </span>
+{% elif application.status == "approved" %}
+    <span class="badge bg-info application-status application-status-approved">
+        {{ application.status_obj.name|default:"Одобрена" }}
+    </span>
+{% elif application.status == "rejected" %}
+    <span class="badge bg-danger application-status application-status-rejected">
+        {{ application.status_obj.name|default:"Отклонена" }}
+    </span>
+{% else %}
+    <span class="badge bg-light text-dark application-status">
+        {{ application.status }}
+    </span>
+{% endif %}

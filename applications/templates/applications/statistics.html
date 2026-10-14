@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}
+Статистика — Сервис заявок
+{% endblock %}
+
+{% block content %}
+<h1>Статистика</h1>
+
+<ul class="list-group">
+    <li class="list-group-item d-flex justify-content-between">
+        <span>Всего проектов</span>
+        <strong>{{ stats.total_projects }}</strong>
+    </li>
+    <li class="list-group-item d-flex justify-content-between">
+        <span>Активных заявок</span>
+        <strong>{{ stats.active_applications }}</strong>
+    </li>
+    <li class="list-group-item d-flex justify-content-between">
+        <span>Отменённых заявок</span>
+        <strong>{{ stats.cancelled_applications }}</strong>
+    </li>
+    <li class="list-group-item d-flex justify-content-between">
+        <span>Всего мест</span>
+        <strong>{{ stats.total_places }}</strong>
+    </li>
+    <li class="list-group-item d-flex justify-content-between">
+        <span>Занято мест</span>
+        <strong>{{ stats.taken_places }}</strong>
+    </li>
+    <li class="list-group-item d-flex justify-content-between">
+        <span>Свободно мест</span>
+        <strong>{{ stats.free_places }}</strong>
+    </li>
+    <li class="list-group-item d-flex justify-content-between">
+        <span>Заполненность</span>
+        <strong>{{ stats.fill_percent }}%</strong>
+    </li>
+</ul>
+{% endblock %}
