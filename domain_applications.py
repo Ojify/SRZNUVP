@@ -1,36 +1,20 @@
-import json
-import os
+"""Сущность «Заявка»."""
+
 from datetime import datetime
 
-APPLICATIONS_FILE = "applications.json"
+from storage import load_json, save_json
+from utils import next_id
+
+FILE = "applications.json"
 
 
-def _load_json(path, default):
-    if not os.path.exists(path):
-        return default
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return default
-
-
-def _save_json(path, data):
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-
-def load_applications(path=APPLICATIONS_FILE):
-    data = _load_json(path, [])
+def load_applications():
+    data = load_json(FILE, [])
     return data if isinstance(data, list) else []
 
 
-def save_applications(applications, path=APPLICATIONS_FILE):
-    _save_json(path, applications)
-
-
-def next_application_id(applications):
-    return max((a.get("id", 0) for a in applications), default=0) + 1
+def save_applications(applications):
+    save_json(FILE, applications)
 
 
 def find_application(applications, application_id):
@@ -54,13 +38,13 @@ def add_application(applications, project, user):
         return None, "Проект не найден."
     if user is None:
         return None, "Пользователь не найден."
-    if not project["current_participants"] < project["max_participants"]:
+    if project["current_participants"] >= project["max_participants"]:
         return None, "Нет свободных мест — проект недоступен."
     if has_active_application(applications, project["id"], user["id"]):
         return None, "Пользователь уже подал заявку на этот проект."
 
     application = {
-        "id": next_application_id(applications),
+        "id": next_id(applications),
         "project_id": project["id"],
         "user_id": user["id"],
         "created_at": datetime.now().isoformat(timespec="seconds"),
@@ -81,3 +65,19 @@ def cancel_application(applications, project, application_id):
     if project and project["current_participants"] > 0:
         project["current_participants"] -= 1
     return True, "Заявка отменена."
+
+
+def get_statistics(projects, applications):
+    total_places = sum(p["max_participants"] for p in projects.values())
+    taken = sum(p["current_participants"] for p in projects.values())
+    active = [a for a in applications if a["status"] == "active"]
+    fill = round(taken / total_places * 100, 2) if total_places else 0.0
+    return {
+        "total_projects": len(projects),
+        "active_applications": len(active),
+        "cancelled_applications": len(applications) - len(active),
+        "total_places": total_places,
+        "taken_places": taken,
+        "free_places": max(0, total_places - taken),
+        "fill_percent": fill,
+    }

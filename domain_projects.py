@@ -1,26 +1,13 @@
-import json
-import os
+"""Сущность «Проект»."""
 
-PROJECTS_FILE = "projects.json"
+from storage import load_json, save_json
+from utils import next_id
 
-
-def _load_json(path, default):
-    if not os.path.exists(path):
-        return default
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return default
+FILE = "projects.json"
 
 
-def _save_json(path, data):
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-
-def load_projects(path=PROJECTS_FILE):
-    raw = _load_json(path, {})
+def load_projects():
+    raw = load_json(FILE, {})
     projects = {}
     if not isinstance(raw, dict):
         return projects
@@ -36,12 +23,8 @@ def load_projects(path=PROJECTS_FILE):
     return projects
 
 
-def save_projects(projects, path=PROJECTS_FILE):
-    _save_json(path, {str(k): v for k, v in projects.items()})
-
-
-def next_project_id(projects):
-    return max(projects.keys(), default=0) + 1
+def save_projects(projects):
+    save_json(FILE, {str(k): v for k, v in projects.items()})
 
 
 def find_project(projects, project_id):
@@ -57,7 +40,7 @@ def free_places(project):
 
 
 def add_project(projects, name, description, deadline, max_participants):
-    pid = next_project_id(projects)
+    pid = next_id(projects)
     projects[pid] = {
         "id": pid,
         "name": name,
@@ -91,3 +74,24 @@ def delete_project(projects, project_id):
         return False
     del projects[project_id]
     return True
+
+
+def search_projects(projects, query):
+    q = (query or "").strip().lower()
+    values = list(projects.values())
+    if not q:
+        return values
+    return [p for p in values
+            if q in p["name"].lower() or q in p["description"].lower()]
+
+
+def sort_projects(projects, key="name", reverse=False):
+    values = list(projects.values())
+    keys = {
+        "id": lambda p: p["id"],
+        "name": lambda p: p["name"].lower(),
+        "deadline": lambda p: p["deadline"],
+        "participants": lambda p: p["current_participants"],
+    }
+    values.sort(key=keys.get(key, keys["name"]), reverse=reverse)
+    return values

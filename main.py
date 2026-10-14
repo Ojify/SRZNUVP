@@ -1,48 +1,10 @@
-from datetime import datetime
+"""Сервис регистрации заявок на участие в проектах."""
 
-import application as app_mod
-import project as proj_mod
-import status as status_mod
-import user as user_mod
-
-DATE_FORMAT = "%Y-%m-%d"
-
-
-def search_projects(projects, query):
-    q = (query or "").strip().lower()
-    values = list(projects.values())
-    if not q:
-        return values
-    return [p for p in values
-            if q in p["name"].lower() or q in p["description"].lower()]
-
-
-def sort_projects(projects, key="name", reverse=False):
-    values = list(projects.values())
-    keys = {
-        "id": lambda p: p["id"],
-        "name": lambda p: p["name"].lower(),
-        "deadline": lambda p: p["deadline"],
-        "participants": lambda p: p["current_participants"],
-    }
-    values.sort(key=keys.get(key, keys["name"]), reverse=reverse)
-    return values
-
-
-def get_statistics(projects, applications):
-    total_places = sum(p["max_participants"] for p in projects.values())
-    taken = sum(p["current_participants"] for p in projects.values())
-    active = [a for a in applications if a["status"] == "active"]
-    fill = round(taken / total_places * 100, 2) if total_places else 0.0
-    return {
-        "total_projects": len(projects),
-        "active_applications": len(active),
-        "cancelled_applications": len(applications) - len(active),
-        "total_places": total_places,
-        "taken_places": taken,
-        "free_places": max(0, total_places - taken),
-        "fill_percent": fill,
-    }
+import domain_applications as app_mod
+import domain_projects as proj_mod
+import domain_statuses as status_mod
+import domain_users as user_mod
+from utils import parse_date, parse_int, parse_positive_int, parse_skills
 
 
 def print_projects(items):
@@ -92,40 +54,6 @@ def print_statuses(statuses):
     print("---------------------------\n")
 
 
-def parse_date(raw):
-    return datetime.strptime(raw.strip(), DATE_FORMAT).date().isoformat()
-
-
-def ask_date(prompt="Дедлайн (yyyy-mm-dd): "):
-    raw = input(prompt).strip()
-    try:
-        return parse_date(raw)
-    except ValueError:
-        print("Ошибка: неверный формат даты.")
-        return None
-
-
-def ask_positive_int(prompt):
-    raw = input(prompt).strip()
-    try:
-        v = int(raw)
-        if v <= 0:
-            print("Ошибка: число должно быть больше нуля.")
-            return None
-        return v
-    except ValueError:
-        print("Ошибка: нужно целое число.")
-        return None
-
-
-def ask_int(prompt):
-    try:
-        return int(input(prompt).strip())
-    except ValueError:
-        print("Ошибка: нужно целое число.")
-        return None
-
-
 def menu():
     projects = proj_mod.load_projects()
     users = user_mod.load_users()
@@ -147,11 +75,12 @@ def menu():
         print("10. Пользователи: добавить")
         print("11. Пользователи: редактировать")
         print("12. Пользователи: удалить")
-        print("13. Статусы: справочник")
-        print("14. Подать заявку")
-        print("15. Отменить заявку")
-        print("16. Показать все заявки")
-        print("17. Статистика")
+        print("13. Пользователи: поиск")
+        print("14. Статусы: справочник")
+        print("15. Подать заявку")
+        print("16. Отменить заявку")
+        print("17. Показать все заявки")
+        print("18. Статистика")
         print("0. Выход")
         print("========================")
         choice = input("Выберите пункт: ").strip()
@@ -168,11 +97,7 @@ def menu():
             print_projects(list(projects.values()))
 
         elif choice == "2":
-            if not projects:
-                print("Список проектов пуст.\n")
-                continue
-            print_projects(list(projects.values()))
-            pid = ask_int("Введите ID проекта: ")
+            pid = _read_int("Введите ID проекта: ")
             if pid is None:
                 continue
             p = proj_mod.find_project(projects, pid)
@@ -182,19 +107,18 @@ def menu():
                 print_projects([p])
 
         elif choice == "3":
-            print("\n--- Добавление проекта ---")
             name = input("Название: ").strip()
             if not name:
-                print("Ошибка: название не может быть пустым.\n")
+                print("Ошибка: название пустое.\n")
                 continue
             description = input("Описание: ").strip()
             if not description:
-                print("Ошибка: описание не может быть пустым.\n")
+                print("Ошибка: описание пустое.\n")
                 continue
-            deadline = ask_date()
+            deadline = _read_date("Дедлайн (yyyy-mm-dd): ")
             if not deadline:
                 continue
-            max_p = ask_positive_int("Максимум участников: ")
+            max_p = _read_positive_int("Максимум участников: ")
             if max_p is None:
                 continue
             pid = proj_mod.add_project(projects, name, description, deadline, max_p)
@@ -202,43 +126,34 @@ def menu():
             print(f"Проект добавлен. ID: {pid}\n")
 
         elif choice == "4":
-            if not projects:
-                print("Список проектов пуст.\n")
-                continue
             print_projects(list(projects.values()))
-            pid = ask_int("ID проекта для редактирования: ")
+            pid = _read_int("ID проекта для редактирования: ")
             if pid is None or pid not in projects:
                 print("Проект не найден.\n")
                 continue
-            print("Оставьте поле пустым, чтобы не изменять.")
-            name = input("Новое название: ").strip() or None
-            description = input("Новое описание: ").strip() or None
-            deadline_raw = input("Новый дедлайн (yyyy-mm-dd): ").strip()
+            name = input("Новое название (Enter — пропустить): ").strip() or None
+            description = input("Новое описание (Enter — пропустить): ").strip() or None
+            deadline_raw = input("Новый дедлайн (Enter — пропустить): ").strip()
             deadline = None
             if deadline_raw:
                 try:
                     deadline = parse_date(deadline_raw)
                 except ValueError:
                     print("Дедлайн не изменён: неверный формат.")
-            max_raw = input("Новый максимум участников: ").strip()
+            max_raw = input("Новый максимум (Enter — пропустить): ").strip()
             max_value = None
             if max_raw:
                 try:
-                    v = int(max_raw)
-                    if v > 0:
-                        max_value = v
+                    max_value = parse_positive_int(max_raw)
                 except ValueError:
-                    pass
+                    print("Максимум не изменён.")
             proj_mod.edit_project(projects, pid, name, description, deadline, max_value)
             proj_mod.save_projects(projects)
             print("Проект обновлён.\n")
 
         elif choice == "5":
-            if not projects:
-                print("Список проектов пуст.\n")
-                continue
             print_projects(list(projects.values()))
-            pid = ask_int("ID проекта для удаления: ")
+            pid = _read_int("ID проекта для удаления: ")
             if pid is None or pid not in projects:
                 print("Проект не найден.\n")
                 continue
@@ -250,45 +165,38 @@ def menu():
                 app_mod.save_applications(applications)
                 print("Проект удалён.\n")
             else:
-                print("Удаление отменено.\n")
+                print("Отменено.\n")
 
         elif choice == "6":
-            if not projects:
-                print("Список проектов пуст.\n")
-                continue
             print_projects(list(projects.values()))
-            pid = ask_int("ID проекта для проверки: ")
+            pid = _read_int("ID проекта для проверки: ")
             if pid is None:
                 continue
             p = proj_mod.find_project(projects, pid)
             if p is None:
                 print("Проект не найден.\n")
             elif proj_mod.check_availability(p):
-                print(f"Проект доступен. Свободно мест: {proj_mod.free_places(p)}.\n")
+                print(f"Доступен. Свободно мест: {proj_mod.free_places(p)}.\n")
             else:
-                print("Проект недоступен: свободных мест нет.\n")
+                print("Недоступен: свободных мест нет.\n")
 
         elif choice == "7":
             query = input("Введите подстроку: ").strip()
-            found = search_projects(projects, query)
+            found = proj_mod.search_projects(projects, query)
             print(f"Найдено: {len(found)}")
             print_projects(found)
 
         elif choice == "8":
-            if not projects:
-                print("Список проектов пуст.\n")
-                continue
             print("Ключ: 1) id  2) name  3) deadline  4) participants")
             key_map = {"1": "id", "2": "name", "3": "deadline", "4": "participants"}
             key = key_map.get(input("Выбор: ").strip(), "name")
             reverse = input("По убыванию? (y/n): ").strip().lower() == "y"
-            print_projects(sort_projects(projects, key, reverse))
+            print_projects(proj_mod.sort_projects(projects, key, reverse))
 
         elif choice == "9":
             print_users(users)
 
         elif choice == "10":
-            print("\n--- Добавление пользователя ---")
             name = input("Имя: ").strip()
             if not name:
                 print("Ошибка: имя пустое.\n")
@@ -297,31 +205,28 @@ def menu():
             if not email:
                 print("Ошибка: email пустой.\n")
                 continue
-            skills_raw = input("Навыки через запятую (можно пусто): ").strip()
-            skills = [s.strip() for s in skills_raw.split(",") if s.strip()]
+            skills = parse_skills(input("Навыки через запятую (можно пусто): "))
             uid = user_mod.add_user(users, name, email, skills)
             user_mod.save_users(users)
             print(f"Пользователь добавлен. ID: {uid}\n")
 
         elif choice == "11":
             print_users(users)
-            uid = ask_int("ID пользователя для редактирования: ")
+            uid = _read_int("ID пользователя для редактирования: ")
             if uid is None or uid not in users:
                 print("Пользователь не найден.\n")
                 continue
             name = input("Новое имя (Enter — пропустить): ").strip() or None
             email = input("Новый email (Enter — пропустить): ").strip() or None
-            skills_raw = input("Новые навыки через запятую (Enter — пропустить): ").strip()
-            skills = None
-            if skills_raw:
-                skills = [s.strip() for s in skills_raw.split(",") if s.strip()]
+            skills_raw = input("Новые навыки (Enter — пропустить): ").strip()
+            skills = parse_skills(skills_raw) if skills_raw else None
             user_mod.edit_user(users, uid, name, email, skills)
             user_mod.save_users(users)
             print("Пользователь обновлён.\n")
 
         elif choice == "12":
             print_users(users)
-            uid = ask_int("ID пользователя для удаления: ")
+            uid = _read_int("ID пользователя для удаления: ")
             if uid is None or uid not in users:
                 print("Пользователь не найден.\n")
                 continue
@@ -333,21 +238,30 @@ def menu():
                 app_mod.save_applications(applications)
                 print("Пользователь удалён.\n")
             else:
-                print("Удаление отменено.\n")
+                print("Отменено.\n")
 
         elif choice == "13":
-            print_statuses(statuses)
+            query = input("Введите подстроку: ").strip()
+            found = user_mod.search_users(users, query)
+            print(f"Найдено: {len(found)}")
+            for u in found:
+                skills = ", ".join(u.get("skills", [])) or "—"
+                print(f"[{u['id']}] {u['name']} <{u['email']}>  навыки: {skills}")
+            print()
 
         elif choice == "14":
+            print_statuses(statuses)
+
+        elif choice == "15":
             if not projects or not users:
                 print("Нужны хотя бы один проект и один пользователь.\n")
                 continue
             print_projects(list(projects.values()))
-            pid = ask_int("ID проекта: ")
+            pid = _read_int("ID проекта: ")
             if pid is None:
                 continue
             print_users(users)
-            uid = ask_int("ID пользователя: ")
+            uid = _read_int("ID пользователя: ")
             if uid is None:
                 continue
             project = proj_mod.find_project(projects, pid)
@@ -357,12 +271,9 @@ def menu():
             app_mod.save_applications(applications)
             print(msg + "\n")
 
-        elif choice == "15":
-            if not applications:
-                print("Заявок нет.\n")
-                continue
+        elif choice == "16":
             print_applications(applications, projects, users, statuses)
-            aid = ask_int("ID заявки для отмены: ")
+            aid = _read_int("ID заявки для отмены: ")
             if aid is None:
                 continue
             application = app_mod.find_application(applications, aid)
@@ -372,11 +283,11 @@ def menu():
             app_mod.save_applications(applications)
             print(msg + "\n")
 
-        elif choice == "16":
+        elif choice == "17":
             print_applications(applications, projects, users, statuses)
 
-        elif choice == "17":
-            stats = get_statistics(projects, applications)
+        elif choice == "18":
+            stats = app_mod.get_statistics(projects, applications)
             print("\n--- Статистика ---")
             print(f"Всего проектов:      {stats['total_projects']}")
             print(f"Активных заявок:     {stats['active_applications']}")
@@ -388,6 +299,33 @@ def menu():
 
         else:
             print("Неизвестная команда.\n")
+
+
+def _read_int(prompt):
+    raw = input(prompt).strip()
+    try:
+        return parse_int(raw)
+    except ValueError:
+        print("Ошибка: нужно целое число.")
+        return None
+
+
+def _read_positive_int(prompt):
+    raw = input(prompt).strip()
+    try:
+        return parse_positive_int(raw)
+    except ValueError:
+        print("Ошибка: нужно целое число > 0.")
+        return None
+
+
+def _read_date(prompt):
+    raw = input(prompt).strip()
+    try:
+        return parse_date(raw)
+    except ValueError:
+        print("Ошибка: неверный формат даты.")
+        return None
 
 
 if __name__ == "__main__":

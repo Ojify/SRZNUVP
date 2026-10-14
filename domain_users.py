@@ -1,26 +1,13 @@
-import json
-import os
+"""Сущность «Пользователь»."""
 
-USERS_FILE = "users.json"
+from storage import load_json, save_json
+from utils import next_id
 
-
-def _load_json(path, default):
-    if not os.path.exists(path):
-        return default
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return default
+FILE = "users.json"
 
 
-def _save_json(path, data):
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-
-def load_users(path=USERS_FILE):
-    raw = _load_json(path, {})
+def load_users():
+    raw = load_json(FILE, {})
     users = {}
     if not isinstance(raw, dict):
         return users
@@ -35,12 +22,8 @@ def load_users(path=USERS_FILE):
     return users
 
 
-def save_users(users, path=USERS_FILE):
-    _save_json(path, {str(k): v for k, v in users.items()})
-
-
-def next_user_id(users):
-    return max(users.keys(), default=0) + 1
+def save_users(users):
+    save_json(FILE, {str(k): v for k, v in users.items()})
 
 
 def find_user(users, user_id):
@@ -48,7 +31,7 @@ def find_user(users, user_id):
 
 
 def add_user(users, name, email, skills=None):
-    uid = next_user_id(users)
+    uid = next_id(users)
     users[uid] = {
         "id": uid,
         "name": name,
@@ -76,3 +59,12 @@ def delete_user(users, user_id):
         return False
     del users[user_id]
     return True
+
+
+def search_users(users, query):
+    q = (query or "").strip().lower()
+    values = list(users.values())
+    if not q:
+        return values
+    return [u for u in values
+            if q in u["name"].lower() or q in u["email"].lower()]
