@@ -1,59 +1,69 @@
-import pytest
-
 import domain_users as user_mod
+from domain_users import User
 
 
-@pytest.fixture
-def sample_users():
-    return {
-        1: {"id": 1, "name": "Иван Петров", "email": "ivan@example.com",
-            "skills": ["python", "sql"]},
-        2: {"id": 2, "name": "Анна Смирнова", "email": "anna@example.com",
-            "skills": ["ui", "ux"]},
-    }
+def test_user_creation():
+    u = User(1, "Иван", "i@e.com", ["python", "sql"])
+    assert u.id == 1
+    assert u.name == "Иван"
+    assert u.email == "i@e.com"
+    assert u.skills == ["python", "sql"]
 
 
-def test_add_user(sample_users):
-    uid = user_mod.add_user(sample_users, "Пётр", "p@example.com", ["go"])
-    assert uid == 3
-    assert sample_users[3]["skills"] == ["go"]
+def test_user_str_and_from_data():
+    u = User.from_data(
+        {"id": 2, "name": "Аня", "email": "a@e.com", "skills": ["sql"]}
+    )
+    assert u.id == 2
+    assert "Аня" in str(u)
+    assert u.to_data()["skills"] == ["sql"]
 
 
-def test_edit_user(sample_users):
-    ok = user_mod.edit_user(sample_users, 1, email="new@example.com")
-    assert ok is True
-    assert sample_users[1]["email"] == "new@example.com"
-    assert sample_users[1]["name"] == "Иван Петров"
+def test_user_default_skills():
+    u = User(3, "Пётр", "p@e.com")
+    assert u.skills == []
 
 
-def test_edit_user_not_found(sample_users):
-    assert user_mod.edit_user(sample_users, 999, name="X") is False
-
-
-def test_delete_user(sample_users):
-    assert user_mod.delete_user(sample_users, 2) is True
-    assert 2 not in sample_users
-
-
-def test_find_user(sample_users):
-    assert user_mod.find_user(sample_users, 1)["name"] == "Иван Петров"
-    assert user_mod.find_user(sample_users, 999) is None
-
-
-def test_search_users_by_name(sample_users):
-    found = user_mod.search_users(sample_users, "анна")
-    assert len(found) == 1
-    assert found[0]["id"] == 2
-
-
-def test_search_users_by_email(sample_users):
-    found = user_mod.search_users(sample_users, "ivan@")
-    assert len(found) == 1
-    assert found[0]["id"] == 1
-
-
-def test_users_roundtrip(tmp_path, monkeypatch, sample_users):
+def test_users_roundtrip(tmp_path, monkeypatch):
     monkeypatch.setattr("storage.DATA_DIR", str(tmp_path))
-    user_mod.save_users(sample_users)
+    users = {
+        1: User(1, "A", "a@e.com"),
+        2: User(2, "B", "b@e.com", ["go"]),
+    }
+    user_mod.save_users(users)
     loaded = user_mod.load_users()
-    assert loaded == sample_users
+    assert set(loaded.keys()) == {1, 2}
+    assert loaded[1].name == "A"
+    assert loaded[2].skills == ["go"]
+    assert isinstance(loaded[1], User)
+
+
+def test_add_find_edit_delete_user(tmp_path, monkeypatch):
+    monkeypatch.setattr("storage.DATA_DIR", str(tmp_path))
+    users = {}
+    uid = user_mod.add_user(users, "Иван", "i@e.com")
+    assert uid in users
+    assert user_mod.find_user(users, uid) is users[uid]
+
+    assert user_mod.edit_user(users, uid, name="Пётр") is True
+    assert users[uid].name == "Пётр"
+
+    assert user_mod.edit_user(users, 999, name="X") is False
+
+    assert user_mod.delete_user(users, uid) is True
+    assert users == {}
+
+
+def test_search_users(tmp_path, monkeypatch):
+    monkeypatch.setattr("storage.DATA_DIR", str(tmp_path))
+    users = {
+        1: User(1, "Иван Петров", "ivan@example.com", ["python"]),
+        2: User(2, "Анна Смирнова", "anna@example.com", ["ui"]),
+    }
+    assert [
+        u.id for u in user_mod.search_users(users, "анна")
+    ] == [2]
+    assert [
+        u.id for u in user_mod.search_users(users, "ivan@")
+    ] == [1]
+    assert len(user_mod.search_users(users, "")) == 2

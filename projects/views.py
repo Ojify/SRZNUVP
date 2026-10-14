@@ -6,6 +6,7 @@ from domain_projects import (
     free_places,
     load_projects,
 )
+from domain_users import load_users
 from domain_applications import load_applications
 
 
@@ -15,9 +16,9 @@ def projects(request):
     for p in projects_dict.values():
         items += f"""
         <li class="list-group-item">
-            <a href="/projects/{p['id']}/">
-                [{p['id']}] {p['name']}
-                — {p['current_participants']}/{p['max_participants']},
+            <a href="/projects/{p.id}/">
+                [{p.id}] {p.name}
+                — {p.current_participants}/{p.max_participants},
                 свободно: {free_places(p)}
             </a>
         </li>
@@ -45,32 +46,38 @@ def project_detail(request, project_id):
             status=404,
         )
 
-    applications = load_applications()
+    users_dict = load_users()
+    applications = load_applications(projects_dict, users_dict)
     project_applications = [
-        a for a in applications if a['project_id'] == project_id
+        a for a in applications if a.project.id == project_id
     ]
 
-    status = 'доступен' if free_places(project) > 0 else 'мест нет'
-    badge = 'bg-success' if free_places(project) > 0 else 'bg-danger'
+    available = project.is_available()
+    status = 'доступен' if available else 'мест нет'
+    badge = 'bg-success' if available else 'bg-danger'
 
     rows = ''
     for a in project_applications:
         rows += f"""
         <li class="list-group-item">
-            <a href="/applications/{a['id']}/">Заявка №{a['id']}</a>
-            — статус: {a['status']} ({a['created_at']})
+            <a href="/applications/{a.id}/">Заявка №{a.id}</a>
+            — {a.user.name}, статус: {a.status} ({a.created_at})
         </li>
         """
 
     content = f"""
     <div class="card">
         <div class="card-body">
-            <h5 class="card-title">{project['name']}</h5>
-            <p class="card-text"><strong>Описание:</strong> {project['description']}</p>
-            <p class="card-text"><strong>Дедлайн:</strong> {project['deadline']}</p>
+            <h5 class="card-title">{project.name}</h5>
+            <p class="card-text">
+                <strong>Описание:</strong> {project.description}
+            </p>
+            <p class="card-text">
+                <strong>Дедлайн:</strong> {project.deadline}
+            </p>
             <p class="card-text">
                 <strong>Участников:</strong>
-                {project['current_participants']} из {project['max_participants']}
+                {project.current_participants} из {project.max_participants}
             </p>
             <p class="card-text">
                 Статус: <span class="badge {badge}">{status}</span>
@@ -82,4 +89,4 @@ def project_detail(request, project_id):
     <a href="/projects/"
        class="btn btn-outline-secondary mt-3">← к списку проектов</a>
     """
-    return HttpResponse(page(project['name'], content))
+    return HttpResponse(page(project.name, content))
