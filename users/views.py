@@ -1,39 +1,39 @@
+import sqlite3
 from django.shortcuts import render
 
-from domain_users import find_user, load_users
-from domain_projects import load_projects
-from domain_applications import load_applications
+DB_PATH = "data/srznuvp.sqlite"
 
 
 def users(request):
-    """Список пользователей."""
-    users_dict = load_users()
-    context = {
-        "users": list(users_dict.values()),
-    }
-    return render(request, "users/user_list.html", context)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    users_list = conn.execute("""
+        SELECT id, name, email, skills FROM users ORDER BY name;
+    """).fetchall()
+    conn.close()
+    return render(request, 'users/user_list.html', {'users_list': users_list})
 
 
 def user_detail(request, user_id):
-    """Карточка пользователя и его заявки."""
-    users_dict = load_users()
-    user = find_user(users_dict, user_id)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    user = conn.execute("""
+        SELECT id, name, email, skills FROM users WHERE id = ?;
+    """, (user_id,)).fetchone()
 
-    user_applications = []
-    if user is not None:
-        projects = load_projects()
-        applications = load_applications(projects, users_dict)
-        user_applications = [
-            a for a in applications if a.user.id == user_id
-        ]
+    if user is None:
+        conn.close()
+        return render(request, 'users/user_detail.html', {'user': None}, status=404)
 
-    context = {
-        "user": user,
-        "user_applications": user_applications,
-    }
-    return render(
-        request,
-        "users/user_detail.html",
-        context,
-        status=404 if user is None else 200,
-    )
+    user_applications = conn.execute("""
+        SELECT a.id, a.status, p.name AS project_name
+        FROM applications a
+        JOIN projects p ON a.project_id = p.id
+        WHERE a.user_id = ?;
+    """, (user_id,)).fetchall()
+    conn.close()
+
+    return render(request, 'users/user_detail.html', {
+        'user': user,
+        'user_applications': user_applications
+    })

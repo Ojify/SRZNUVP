@@ -1,14 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}
-Пользователи — Сервис заявок
-{% endblock %}
+{% block title %}Пользователи — Сервис заявок{% endblock %}
 
 {% block content %}
 <h1>Пользователи</h1>
-<p>Всего пользователей: {{ users|length }}</p>
+<p>Всего пользователей: {{ users_list|length }}</p>
 
-{% for user in users %}
+{% for user in users_list %}
     {% include "users/includes/user_card.html" %}
 {% empty %}
     <p>Пользователи не найдены.</p>

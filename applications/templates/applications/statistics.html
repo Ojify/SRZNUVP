@@ -1,24 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}
-Статистика — Сервис заявок
-{% endblock %}
+{% block title %}Статистика — Сервис заявок{% endblock %}
 
 {% block content %}
 <h1>Статистика</h1>
 
-<ul class="list-group">
+<ul class="list-group shadow-sm">
     <li class="list-group-item d-flex justify-content-between">
         <span>Всего проектов</span>
         <strong>{{ stats.total_projects }}</strong>
     </li>
     <li class="list-group-item d-flex justify-content-between">
         <span>Активных заявок</span>
-        <strong>{{ stats.active_applications }}</strong>
+        <strong>{{ stats.active_apps }}</strong>
     </li>
     <li class="list-group-item d-flex justify-content-between">
         <span>Отменённых заявок</span>
-        <strong>{{ stats.cancelled_applications }}</strong>
+        <strong>{{ stats.cancelled_apps }}</strong>
     </li>
     <li class="list-group-item d-flex justify-content-between">
         <span>Всего мест</span>

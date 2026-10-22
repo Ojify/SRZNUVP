@@ -1,26 +1,24 @@
 {% extends "base.html" %}
 
 {% block title %}
-{% if project %}{{ project.name }} — Сервис заявок{% else %}Проект не найден — Сервис заявок{% endif %}
+{% if project %}{{ project.name }} — Сервис заявок{% else %}Проект не найден{% endif %}
 {% endblock %}
 
 {% block content %}
 {% if project %}
-    <div class="card mb-4">
+    <div class="card mb-4 shadow-sm">
         <div class="card-body">
             <h1 class="card-title h3">{{ project.name }}</h1>
             <p class="card-text">{{ project.description }}</p>
+            <p class="card-text"><strong>Дедлайн:</strong> {{ project.deadline }}</p>
             <p class="card-text">
-                <strong>Дедлайн:</strong> {{ project.deadline }}
-            </p>
-            <p class="card-text">
-                <strong>Участников:</strong>
-                {{ project.current_participants }} из {{ project.max_participants }}
+                <strong>Участников:</strong> {{ project.current_participants }} из {{ project.max_participants }}
                 (свободно: {{ project.free_places }})
             </p>
             <p class="card-text">
                 <strong>Статус:</strong>
-                {% if project.is_available %}
+                <!-- Проверяем вычисленное поле free_places из SQL -->
+                {% if project.free_places > 0 %}
                     <span class="badge bg-success">Доступен</span>
                 {% else %}
                     <span class="badge bg-danger">Мест нет</span>
@@ -35,13 +33,10 @@
         <ul class="list-group">
             {% for application in project_applications %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <a href="{% url 'applications:detail' application.id %}">
-                        Заявка №{{ application.id }}
-                    </a>
+                    <a href="{% url 'applications:detail' application.id %}">Заявка №{{ application.id }}</a>
                     <span class="text-muted">
-                        {{ application.user.name }}
-                        — статус: {{ application.status }}
-                        ({{ application.created_at }})
+                        <!-- Используем алиас user_name из JOIN -->
+                        {{ application.user_name }} — статус: {{ application.status }} ({{ application.created_at }})
                     </span>
                 </li>
             {% endfor %}
@@ -51,11 +46,7 @@
     {% endif %}
 {% else %}
     <h1 class="text-danger">Проект не найден</h1>
-    <p>Проект с указанным идентификатором отсутствует.</p>
 {% endif %}
 
-<a href="{% url 'projects:list' %}"
-   class="btn btn-outline-secondary mt-3">
-    ← к списку проектов
-</a>
+<a href="{% url 'projects:list' %}" class="btn btn-outline-secondary mt-3">← к списку проектов</a>
 {% endblock %}

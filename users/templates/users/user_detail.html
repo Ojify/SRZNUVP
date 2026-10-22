@@ -1,23 +1,19 @@
 {% extends "base.html" %}
 
 {% block title %}
-{% if user %}{{ user.name }} — Сервис заявок{% else %}Пользователь не найден — Сервис заявок{% endif %}
+{% if user %}{{ user.name }} — Сервис заявок{% else %}Пользователь не найден{% endif %}
 {% endblock %}
 
 {% block content %}
 {% if user %}
-    <div class="card mb-4">
+    <div class="card mb-4 shadow-sm">
         <div class="card-body">
             <h1 class="card-title h3">{{ user.name }}</h1>
-            <p class="card-text"><strong>ID:</strong> {{ user.id }}</p>
             <p class="card-text"><strong>Email:</strong> {{ user.email }}</p>
             <p class="card-text">
                 <strong>Навыки:</strong>
-                {% if user.skills %}
-                    {{ user.skills|join:", " }}
-                {% else %}
-                    —
-                {% endif %}
+                <!-- Просто выводим строку из базы -->
+                {{ user.skills|default:"—" }}
             </p>
         </div>
     </div>
@@ -28,12 +24,9 @@
         <ul class="list-group">
             {% for application in user_applications %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <a href="{% url 'applications:detail' application.id %}">
-                        Заявка №{{ application.id }}
-                    </a>
+                    <a href="{% url 'applications:detail' application.id %}">Заявка №{{ application.id }}</a>
                     <span class="text-muted">
-                        проект «{{ application.project.name }}»
-                        — статус: {{ application.status }}
+                        проект «{{ application.project_name }}» — статус: {{ application.status }}
                     </span>
                 </li>
             {% endfor %}
@@ -43,11 +36,7 @@
     {% endif %}
 {% else %}
     <h1 class="text-danger">Пользователь не найден</h1>
-    <p>Пользователь с указанным идентификатором отсутствует.</p>
 {% endif %}
 
-<a href="{% url 'users:list' %}"
-   class="btn btn-outline-secondary mt-3">
-    ← к списку пользователей
-</a>
+<a href="{% url 'users:list' %}" class="btn btn-outline-secondary mt-3">← к списку пользователей</a>
 {% endblock %}

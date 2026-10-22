@@ -1,16 +1,27 @@
 {% extends "base.html" %}
 
-{% block title %}
-Проекты — Сервис заявок
-{% endblock %}
+{% block title %}Проекты — Сервис заявок{% endblock %}
 
 {% block content %}
-<h1>Проекты</h1>
-<p>Всего проектов: {{ projects|length }}</p>
+<h1 class="mb-4">Проекты</h1>
+<p class="lead">Всего проектов: {{ projects_list|length }}</p>
 
-{% for project in projects %}
-    {% include "projects/includes/project_card.html" %}
-{% empty %}
-    <p>Проекты не найдены.</p>
-{% endfor %}
+<div class="row">
+    {% for p in projects_list %}
+        <div class="col-md-6 mb-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title h4">{{ p.name }}</h2>
+                    <p class="card-text text-muted">Дедлайн: {{ p.deadline }}</p>
+                    <p class="card-text">
+                        Участники: <strong>{{ p.current_participants }}</strong> / {{ p.max_participants }}
+                    </p>
+                    <a href="{% url 'projects:detail' p.id %}" class="btn btn-primary btn-sm">Подробнее</a>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p>Проектов пока нет.</p>
+    {% endfor %}
+</div>
 {% endblock %}

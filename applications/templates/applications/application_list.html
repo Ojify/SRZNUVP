@@ -1,27 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}
-Заявки — Сервис заявок
-{% endblock %}
+{% block title %}Заявки — Сервис заявок{% endblock %}
 
 {% block content %}
 <h1>Заявки</h1>
-<p>Всего заявок: {{ applications|length }}</p>
+<p>Всего заявок: {{ applications_list|length }}</p>
 
-{% if applications %}
+{% if applications_list %}
     <ul class="list-group">
-        {% for application in applications %}
+        {% for app in applications_list %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    <a href="{% url 'applications:detail' application.id %}">
-                        [{{ application.id }}]
-                        {{ application.user.name }} → «{{ application.project.name }}»
-                    </a>
-                    <div class="text-muted small">
-                        Создана: {{ application.created_at }}
-                    </div>
-                </div>
-                {% include "applications/includes/application_status.html" %}
+                <a href="{% url 'applications:detail' app.id %}">Заявка №{{ app.id }}</a>
+                <span>
+                    {{ app.user_name }} → «{{ app.project_name }}» 
+                    <span class="badge bg-info">{{ app.status }}</span>
+                </span>
             </li>
         {% endfor %}
     </ul>
