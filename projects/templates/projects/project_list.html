@@ -1,27 +1,22 @@
 {% extends "base.html" %}
-
-{% block title %}Проекты — Сервис заявок{% endblock %}
-
 {% block content %}
-<h1 class="mb-4">Проекты</h1>
-<p class="lead">Всего проектов: {{ projects_list|length }}</p>
-
+<h1>Проекты</h1>
 <div class="row">
     {% for p in projects_list %}
         <div class="col-md-6 mb-3">
             <div class="card h-100 shadow-sm">
                 <div class="card-body">
                     <h2 class="card-title h4">{{ p.name }}</h2>
-                    <p class="card-text text-muted">Дедлайн: {{ p.deadline }}</p>
-                    <p class="card-text">
-                        Участники: <strong>{{ p.current_participants }}</strong> / {{ p.max_participants }}
-                    </p>
+                    <p class="card-text">Дедлайн: {{ p.deadline|date:"d.m.Y" }}</p>
+                    <p class="card-text">Участники: {{ p.current_participants }} / {{ p.max_participants }}</p>
+                    <!-- Выводим вычисляемое поле из annotate -->
+                    <p class="card-text text-muted">Заявок: {{ p.num_apps }}</p>
                     <a href="{% url 'projects:detail' p.id %}" class="btn btn-primary btn-sm">Подробнее</a>
                 </div>
             </div>
         </div>
     {% empty %}
-        <p>Проектов пока нет.</p>
+        <p>Проектов нет.</p>
     {% endfor %}
 </div>
 {% endblock %}

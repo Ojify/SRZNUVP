@@ -1,24 +1,59 @@
 {% extends "base.html" %}
-
-{% block title %}Заявки — Сервис заявок{% endblock %}
-
 {% block content %}
 <h1>Заявки</h1>
-<p>Всего заявок: {{ applications_list|length }}</p>
 
-{% if applications_list %}
-    <ul class="list-group">
-        {% for app in applications_list %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
+<form method="get" class="row g-3 mb-4">
+    <div class="col-md-3">
+        <input type="text" name="q" class="form-control" placeholder="Поиск (имя или проект)" value="{{ search_query }}">
+    </div>
+    <div class="col-md-3">
+        <select name="status" class="form-select">
+            <option value="">Все статусы</option>
+            {% for s in statuses %}
+                <option value="{{ s.code }}" {% if status_filter == s.code %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select name="sort" class="form-select">
+            <option value="date_desc" {% if sort == 'date_desc' %}selected{% endif %}>Сначала новые</option>
+            <option value="date_asc" {% if sort == 'date_asc' %}selected{% endif %}>Сначала старые</option>
+            <option value="project" {% if sort == 'project' %}selected{% endif %}>По названию проекта</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <button type="submit" class="btn btn-primary">Применить</button>
+        <a href="{% url 'applications:list' %}" class="btn btn-outline-secondary">Сброс</a>
+    </div>
+</form>
+
+<ul class="list-group mb-4">
+    {% for app in applications_list %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>
                 <a href="{% url 'applications:detail' app.id %}">Заявка №{{ app.id }}</a>
-                <span>
-                    {{ app.user_name }} → «{{ app.project_name }}» 
-                    <span class="badge bg-info">{{ app.status }}</span>
-                </span>
-            </li>
-        {% endfor %}
+                — {{ app.user.name }} → «{{ app.project.name }}»
+                <span class="text-muted">({{ app.created_at|date:"d.m.Y H:i" }})</span>
+            </span>
+            <span class="badge bg-info">{{ app.status.name }}</span>
+        </li>
+    {% empty %}
+        <li class="list-group-item">Ничего не найдено.</li>
+    {% endfor %}
+</ul>
+
+<!-- Блок пагинации с сохранением GET-параметров -->
+{% if page_obj.has_other_pages %}
+<nav>
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&status={{ status_filter }}&sort={{ sort }}">Назад</a></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Стр. {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&status={{ status_filter }}&sort={{ sort }}">Вперед</a></li>
+        {% endif %}
     </ul>
-{% else %}
-    <p>Заявок пока нет.</p>
+</nav>
 {% endif %}
 {% endblock %}
